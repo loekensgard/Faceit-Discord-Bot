@@ -5,7 +5,7 @@ Discord bot for comparing faceit stats.
 ## Getting started
 
 1. Create your own discord bot.
-2. Create a .env file in the /Bot folder.
+2. Create an .env file in the /Bot folder.
 3. Add *DISCORD_TOKEN={Your token}* and *DISCORD_GUILD={Your server name}*.
 4. Install python and the requirements listed in requirements.txt.
 5. Run the project from a terminal or your favorite IDE.
