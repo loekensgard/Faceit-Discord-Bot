@@ -13,8 +13,7 @@ def getPlayerId(nickname):
         return None
 
     if response.headers.get('Content-Encoding') == 'br':
-        response_json = response.json()
-        return response_json['payload']['guid']
+        print('Encoded with br')
 
     response_json = response.json()    
     return response_json['payload']['guid']
