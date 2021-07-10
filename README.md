@@ -1,6 +1,6 @@
 # Faceit-Discord-Bot
 
-Discord bot for checking comparing faceit stats.
+Discord bot for comparing faceit stats.
 
 ## Getting started
 
