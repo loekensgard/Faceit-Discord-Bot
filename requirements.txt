@@ -1,0 +1,4 @@
+aiohttp==3.7.4.post0
+Brotli==1.0.9
+discord.py==1.7.3
+urllib3==1.26.6
