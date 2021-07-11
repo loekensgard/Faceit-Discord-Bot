@@ -1,10 +1,8 @@
-from inspect import CO_OPTIMIZED
 import os
-import discord
 from discord.ext import commands
 from discord.guild import Guild
 from dotenv import load_dotenv
-from faceit_service import getWins, getPlayerId
+from faceit_service import getWins
 
 load_dotenv()
 
