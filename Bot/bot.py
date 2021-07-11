@@ -1,6 +1,5 @@
 import os
 from discord.ext import commands
-from discord.guild import Guild
 from dotenv import load_dotenv
 from faceit_service import getWins
 
