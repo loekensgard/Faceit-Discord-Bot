@@ -15,11 +15,10 @@ bot = commands.Bot(command_prefix='!')
 
 @bot.event
 async def on_ready():
-    guild = discord.utils.find(lambda g: g.name == GUILD, bot.guilds)
-    print(
-        f'{bot.user.name} has connected to Discord!\n'
-        f'Talking in {guild.name}'
-        )
+    print(f'{bot.user.name} has connected to Discord!\n')
+    active_guilds = bot.guilds
+    for guild in active_guilds:
+        print(f'Talking in {guild.name}\n')
 
 @bot.command(name='faceit', help='Compare kills between to users when they play together')
 async def faceitChecker(ctx, arg1, arg2, arg3 = 10):
