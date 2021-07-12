@@ -1,58 +1,32 @@
 import aiohttp
-import requests
 import brotli
 from player_exists import getPlayers
 
 #TODO: Change this method to async and use aiohttp
-def getPlayerId(nickname):
-    session = requests.session()
-    headers = { 'Accept-Encoding': 'br, gzip, deflate' }
+async def getPlayerId(nickname):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f'https://api.faceit.com/core/v1/nicknames/{nickname}') as response:
+            x = await response.json()
+            print(x)
 
-    response = session.get(f'https://api.faceit.com/core/v1/nicknames/{nickname}', headers = headers)
-    if response.status_code != 200:
-        return None
-
-    if response.headers.get('Content-Encoding') == 'br':
-        print('Encoded with br')
-
-    response_json = response.json()    
+    response_json = x  
     return response_json['payload']['guid']
-
-    # async with aiohttp.ClientSession() as session:
-    #     headers = {'Accept-Encodig': 'gzip, deflate, br'}
-    #     async with session.get(f'https://api.faceit.com/core/v1/nicknames/Thorshi', headers=headers, compress = False) as response:
-    #         if response.status != 200:
-    #            return None
-    #         if response.headers['Content-Encoding'] == 'gzip' or response.headers['Content-Encoding'] == 'br':
-    #             try:
-    #                 return await response.content.read()
-    #             except:
-    #                 print("Failed to read")
-    #             try:
-    #                 return await response.read()
-    #             except:
-    #                 print("Failed to read again")
-    #             try:
-    #                 return await response.json()
-    #             except:
-    #                 print("Failed json")
-
-    #             return "test"
 
 async def getWins(player1, player2, xGames):
     inSameLobby = 0
     playerOneCount = 0
     playerTwoCount = 0
+    sameAmount = 0
 
-    user_id = getPlayerId(player1)
+    user_id = await getPlayerId(player1)
 
     if(user_id == None):
-        return f'Found no user with nickname: {player1}'
+        raise ValueError(f'Found no user with nickname: {player1}')
 
     async with aiohttp.ClientSession() as session:
         async with session.get(f'https://api.faceit.com/stats/v1/stats/time/users/{user_id}/games/csgo?page=0&size={xGames}') as matches_response:
             if matches_response.status != 200:
-                return "Could not fetch matches"
+                raise ValueError('Could not get matches from the faceit api')
             else:
                 json_response_matches = await matches_response.json()
 
@@ -61,13 +35,13 @@ async def getWins(player1, player2, xGames):
 
                     async with session.get(f'https://api.faceit.com/stats/v1/stats/matches/{match_id}') as stats_response:
                         if stats_response.status != 200:
-                            return "Could not fetch stats"
+                            raise ValueError(f'Could not get stats for matchid: {match_id}')
                         else:
                             json_response_stats = await stats_response.json()
                             stats = next(iter(json_response_stats or []), None)
 
                             if stats == None:
-                                return "Found no stats"
+                                raise ValueError(f'Found no stats for matchid: {match_id}')
 
                             teams = stats.get('teams')
                             teamOne = teams[0]
@@ -84,8 +58,15 @@ async def getWins(player1, player2, xGames):
                                     playerOneCount += 1
                                 elif playerTwoTotalKills > playerOneTotalKills:
                                     playerTwoCount += 1
-
+                                else:
+                                    sameAmount += 1
+            
             if inSameLobby == 0:
-                return f'You have played together {inSameLobby} time(s) in your {xGames} latest games.' 
+                return None 
             else:       
-                return f'You have played together {inSameLobby} time(s) in your {xGames} latest games.\n{player1} had most kills in {playerOneCount} matches\n{player2} had most kills in {playerTwoCount} matches'
+                result = dict()
+                result['inSameLobby'] = inSameLobby
+                result['playerOneCount'] = playerOneCount
+                result['playerTwoCount'] = playerTwoCount
+                result['sameAmount'] = sameAmount
+                return result
