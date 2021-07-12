@@ -1,22 +1,42 @@
-name: Build a Docker image and Push it to ACR
+name: Build and Deploy
 
 on:
   push:
     branches: [ main ]
 
-
 jobs:
   build:
+    name: Build and upload image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       
       - uses: azure/docker-login@v1
         with:
-          login-server: pythonbot.azurecr.io
+          login-server: ${{ secrets.ACR_URL }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
       - run: |
-          docker build . -t pythonbot.azurecr.io/pythonbot:${{ github.sha }}
-          docker push pythonbot.azurecr.io/pythonbot:${{ github.sha }}
+          docker build . -t ${{ secrets.ACR_URL }}/pythonbot:${{ github.sha }}
+          docker push ${{ secrets.ACR_URL }}/pythonbot:${{ github.sha }}
+  deploy:
+    name: Deploy image to openshift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: redhat-actions/oc-login@v1
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+      - uses: WyriHaximus/github-action-helm3@v2    
+        with:
+          exec: helm upgrade --install python-bot ./Bot/chart
+            --set image.repository=${{ secrets.ACR_URL }}/pythonbot
+            --set image.tag=${{ github.sha }}
+            --set registry.url=${{ secrets.ACR_URL }}
+            --set registry.user=${{ secrets.ACR_USERNAME }}
+            --set registry.password=${{ secrets.ACR_PASSWORD }}
+            --set replicaCount=1
+            --set secrets.DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}
+    needs: [ build ]
