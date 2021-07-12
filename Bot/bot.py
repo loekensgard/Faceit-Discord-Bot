@@ -26,7 +26,7 @@ async def faceit_check_kills(ctx, arg1, arg2, arg3 = 10):
 
     try:
         logging.info(f'{ctx.author.name} called !faceit command')
-        status = await getWins(arg1, arg2, arg3)
+        status = await getWins(arg1, arg2, arg3, 'Kills')
 
         if status == None:
             await ctx.send(f'{arg1} and {arg2} haven\'t played together in {arg1}s {arg3} latest games')

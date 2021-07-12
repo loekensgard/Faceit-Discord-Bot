@@ -14,6 +14,8 @@ async def getPlayerId(nickname):
             return response_json['player_id']
 
 async def getWins(player1, player2, xGames, property):
+    if not property: raise ValueError(f'property is null')
+
     inSameLobby = 0
     playerOneCount = 0
     playerTwoCount = 0
