@@ -6,11 +6,15 @@ from dotenv import load_dotenv
 from faceit_service import getWins
 
 load_dotenv()
+logging.basicConfig(encoding='utf-8', level=logging.INFO)
 
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
+
+if not TOKEN:
+    logging.error('DISCORD_TOKEN is empty')
 
 bot = commands.Bot(command_prefix='!')
+logging.info('Sat bot prefix to !')
 
 @bot.event
 async def on_ready():
