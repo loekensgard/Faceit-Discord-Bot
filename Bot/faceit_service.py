@@ -1,34 +1,24 @@
 import aiohttp
-from aiohttp import ClientResponse
-
-import gzip
-import json
-
 from player_exists import getPlayers
+from config import settings
 
 async def getPlayerId(nickname):
-    async with aiohttp.ClientSession(auto_decompress=False) as session:
-        async with session.get(f'https://api.faceit.com/core/v1/nicknames/{nickname}') as response:
-            response: ClientResponse
-            if response.status != 200:
+    headers = { 'Authorization': f'Bearer {settings.API_KEY}' }
+    async with aiohttp.ClientSession(headers=headers) as session:
+        async with session.get(f'https://open.faceit.com/data/v4/players?nickname={nickname}') as response:
+            if response.status == 400:
+                raise ValueError(f'Found no user with nickname: {nickname}')
+            elif response.status != 200:
                 raise ValueError('Response code is not 200')
+            response_json = await response.json()
+            return response_json['player_id']
 
-            if response.headers.get('x-faceit-cache') != 'true':
-                # If the data is NOT cached, it's NOT compressed, just return json decode
-                response_json = await response.json()
-                return response_json['payload']['guid']
-
-            decoded = gzip.decompress(await response.read())
-            response_json = json.loads(decoded)
-            return response_json['payload']['guid']
-
-async def getWins(player1, player2, xGames):
+async def getWins(player1, player2, xGames, property):
     inSameLobby = 0
     playerOneCount = 0
     playerTwoCount = 0
     sameAmount = 0
 
-    #Could probably be handeled different
     try:
         user_id = await getPlayerId(player1)
     except:
@@ -37,36 +27,30 @@ async def getWins(player1, player2, xGames):
     if(user_id == None):
         raise ValueError(f'Found no user with nickname: {player1}')
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f'https://api.faceit.com/stats/v1/stats/time/users/{user_id}/games/csgo?page=0&size={xGames}') as matches_response:
+    headers = { 'Authorization': f'Bearer {settings.API_KEY}' }
+    async with aiohttp.ClientSession(headers=headers) as session:
+        async with session.get(f'https://open.faceit.com/data/v4/players/{user_id}/history?game=csgo&offset=0&limit={xGames}') as matches_response:
             if matches_response.status != 200:
                 raise ValueError('Could not get matches from the faceit api')
             else:
                 json_response_matches = await matches_response.json()
 
-                for match in json_response_matches:
-                    match_id = match.get('matchId')
+                for match in json_response_matches.get('items'):
+                    match_id = match.get('match_id')
 
-                    async with session.get(f'https://api.faceit.com/stats/v1/stats/matches/{match_id}') as stats_response:
+                    async with session.get(f'https://open.faceit.com/data/v4/matches/{match_id}/stats') as stats_response:
                         if stats_response.status != 200:
                             raise ValueError(f'Could not get stats for matchid: {match_id}')
                         else:
                             json_response_stats = await stats_response.json()
-                            stats = next(iter(json_response_stats or []), None)
+                            teams = json_response_stats.get('rounds')[0].get('teams')
 
-                            if stats == None:
-                                raise ValueError(f'Found no stats for matchid: {match_id}')
-
-                            teams = stats.get('teams')
-                            teamOne = teams[0]
-                            teamTwo = teams[1]
-
-                            player = getPlayers(teamOne, teamTwo, player1, player2)
+                            player = getPlayers(teams[0], teams[1], player1, player2)
 
                             if player[0] != None and player[1] != None:
                                 inSameLobby += 1
-                                playerOneTotalKills = player[0].get('i6')
-                                playerTwoTotalKills = player[1].get('i6')
+                                playerOneTotalKills = player[0].get('player_stats').get(property)
+                                playerTwoTotalKills = player[1].get('player_stats').get(property)
 
                                 if playerOneTotalKills > playerTwoTotalKills:
                                     playerOneCount += 1
@@ -84,12 +68,3 @@ async def getWins(player1, player2, xGames):
                 result['playerTwoCount'] = playerTwoCount
                 result['sameAmount'] = sameAmount
                 return result
-
-# define Python user-defined exceptions
-class Error(Exception):
-    """Base class for other exceptions"""
-    pass
-
-class CacheError(Error):
-    """Raised when faceit cache is not present"""
-    pass
