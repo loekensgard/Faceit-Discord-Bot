@@ -1,16 +1,15 @@
 import aiohttp
 import brotli
-import logging
 from player_exists import getPlayers
 
 async def getPlayerId(nickname):
-    logging.info(f'Trying to find {nickname} from the faceit api')
     async with aiohttp.ClientSession() as session:
         async with session.get(f'https://api.faceit.com/core/v1/nicknames/{nickname}') as response:
+            if response != 200:
+                raise ValueError('Response code is not 200')
             try:
                 response_json = await response.json()
             except:
-                logging.error('Failed to decode json')
                 raise ValueError('Failed to decode json')
     return response_json['payload']['guid']
 
