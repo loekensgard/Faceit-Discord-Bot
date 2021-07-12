@@ -1,4 +1,5 @@
 import os
+import logging
 from discord.embeds import Embed
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -13,14 +14,15 @@ bot = commands.Bot(command_prefix='!')
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user.name} has connected to Discord!\n')
+    logging.info(f'{bot.user.name} has connected to Discord!\n')
     active_guilds = bot.guilds
     for guild in active_guilds:
-        print(f'Talking in {guild.name}\n')
+        logging.info(f'Talking in {guild.name}\n')
 
 @bot.command(name='faceit', help='Compare kills between to users when they play together')
 async def faceitChecker(ctx, arg1, arg2, arg3 = 10):
     try:
+        logging.info(f'{ctx.author.name} called !faceit command')
         status = await getWins(arg1, arg2, arg3)
 
         if status == None:
@@ -39,6 +41,7 @@ async def faceitChecker(ctx, arg1, arg2, arg3 = 10):
 
             await ctx.send(embed=embed)
     except ValueError as err:
+        logging.error('Failed with error: {}'.format(err.args))
         await ctx.send(f'Failed with error: {err.args}')
             
 bot.run(TOKEN)

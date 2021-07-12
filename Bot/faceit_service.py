@@ -1,15 +1,17 @@
 import aiohttp
 import brotli
+import logging
 from player_exists import getPlayers
 
-#TODO: Change this method to async and use aiohttp
 async def getPlayerId(nickname):
+    logging.info(f'Trying to find {nickname} from the faceit api')
     async with aiohttp.ClientSession() as session:
         async with session.get(f'https://api.faceit.com/core/v1/nicknames/{nickname}') as response:
-            x = await response.json()
-            print(x)
-
-    response_json = x  
+            try:
+                response_json = await response.json()
+            except:
+                logging.error('Failed to decode json')
+                raise ValueError('Failed to decode json')
     return response_json['payload']['guid']
 
 async def getWins(player1, player2, xGames):
@@ -18,7 +20,10 @@ async def getWins(player1, player2, xGames):
     playerTwoCount = 0
     sameAmount = 0
 
-    user_id = await getPlayerId(player1)
+    try:
+        user_id = await getPlayerId(player1)
+    except:
+        raise ValueError(f'Failed to get user id from {player1}')
 
     if(user_id == None):
         raise ValueError(f'Found no user with nickname: {player1}')
