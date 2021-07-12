@@ -39,4 +39,5 @@ jobs:
             --set registry.password=${{ secrets.ACR_PASSWORD }}
             --set replicaCount=1
             --set secrets.DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}
+            --set secrets.CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}
     needs: [ build ]
