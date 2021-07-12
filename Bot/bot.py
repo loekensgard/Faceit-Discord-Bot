@@ -23,8 +23,11 @@ async def on_ready():
     for guild in active_guilds:
         logging.info(f'Talking in {guild.name}\n')
 
-@bot.command(name='faceit', help='Compare kills between to users when they play together')
+@bot.command(name='faceit', help='.!faceit <NICK1> <NICK2> <X-GAMES>')
 async def faceitChecker(ctx, arg1, arg2, arg3 = 10):
+    if arg3 > 200:
+        arg3 == 200
+
     try:
         logging.info(f'{ctx.author.name} called !faceit command')
         status = await getWins(arg1, arg2, arg3)
@@ -32,11 +35,12 @@ async def faceitChecker(ctx, arg1, arg2, arg3 = 10):
         if status == None:
             await ctx.send(f'{arg1} and {arg2} haven\'t played together in {arg1}s {arg3} latest games')
         else:    
+            inSameLobby = status.get('inSameLobby', 0)
             playerOneCount = status.get('playerOneCount', 0)
             playerTwoCount = status.get('playerTwoCount', 0)
             sameAmount = status.get('sameAmount', 0)
 
-            embed=Embed(title=f'{arg1} vs {arg2}', description=f'Who had most kills over {arg3} games?', color=0x0004ff)
+            embed=Embed(title=f'{arg1} vs {arg2}', description=f'You played together {inSameLobby} time(s) in the last {arg3} game(s)', color=0x0004ff)
             embed.add_field(name=f'{arg1}', value=f'{playerOneCount} wins', inline=True)
             embed.add_field(name=f'{arg2}', value=f'{playerTwoCount} wins', inline=True)
 

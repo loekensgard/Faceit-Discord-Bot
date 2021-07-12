@@ -1,6 +1,7 @@
+[![Build and Deploy](https://github.com/loekensgard/Faceit-Discord-Bot/actions/workflows/deployment.yml/badge.svg?branch=main)](https://github.com/loekensgard/Faceit-Discord-Bot/actions/workflows/deployment.yml)
+
 # Faceit-Discord-Bot
 
-[![Build and Deploy](https://github.com/loekensgard/Faceit-Discord-Bot/actions/workflows/deployment.yml/badge.svg?branch=main)](https://github.com/loekensgard/Faceit-Discord-Bot/actions/workflows/deployment.yml)
 Discord bot for comparing faceit stats.
 
 ## Getting started

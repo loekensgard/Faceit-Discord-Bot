@@ -1,5 +1,6 @@
 import aiohttp
 import brotli
+import logging
 from player_exists import getPlayers
 
 async def getPlayerId(nickname):
@@ -7,6 +8,13 @@ async def getPlayerId(nickname):
         async with session.get(f'https://api.faceit.com/core/v1/nicknames/{nickname}') as response:
             if response.status != 200:
                 raise ValueError('Response code is not 200')
+
+            #if faceit cache is not present, the response is not g-zipped but aiohttp stil thinks so
+            x_faceit_cache = response.headers['x-faceit-cache']
+            if not x_faceit_cache:
+                logging.warning('cache was not present, retrying')
+                raise CacheError('Faceit cache is missing')
+
             try:
                 response_json = await response.json()
             except:
@@ -19,8 +27,14 @@ async def getWins(player1, player2, xGames):
     playerTwoCount = 0
     sameAmount = 0
 
+    #Could probably be handeled different
     try:
         user_id = await getPlayerId(player1)
+    except CacheError:
+        try:
+            user_id = await getPlayerId(player1)
+        except:
+            raise
     except:
         raise
 
@@ -74,3 +88,12 @@ async def getWins(player1, player2, xGames):
                 result['playerTwoCount'] = playerTwoCount
                 result['sameAmount'] = sameAmount
                 return result
+
+# define Python user-defined exceptions
+class Error(Exception):
+    """Base class for other exceptions"""
+    pass
+
+class CacheError(Error):
+    """Raised when faceit cache is not present"""
+    pass
