@@ -1,5 +1,6 @@
 import os
 import logging
+from brotli import compress
 from discord.embeds import Embed
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -47,5 +48,10 @@ async def faceitChecker(ctx, arg1, arg2, arg3 = 10):
     except ValueError as err:
         logging.error('Failed with error: {}'.format(err.args))
         await ctx.send(f'Failed with error: {err.args}')
+
+@faceitChecker.error
+async def faceitChecker_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('You are missing some arguments')
             
 bot.run(TOKEN)

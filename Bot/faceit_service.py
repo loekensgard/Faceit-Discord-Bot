@@ -5,7 +5,7 @@ from player_exists import getPlayers
 async def getPlayerId(nickname):
     async with aiohttp.ClientSession() as session:
         async with session.get(f'https://api.faceit.com/core/v1/nicknames/{nickname}') as response:
-            if response != 200:
+            if response.status != 200:
                 raise ValueError('Response code is not 200')
             try:
                 response_json = await response.json()
@@ -22,7 +22,7 @@ async def getWins(player1, player2, xGames):
     try:
         user_id = await getPlayerId(player1)
     except:
-        raise ValueError(f'Failed to get user id from {player1}')
+        raise
 
     if(user_id == None):
         raise ValueError(f'Found no user with nickname: {player1}')
