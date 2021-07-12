@@ -1,6 +1,5 @@
 import os
 import logging
-from brotli import compress
 from discord.embeds import Embed
 from discord.ext import commands
 from dotenv import load_dotenv
