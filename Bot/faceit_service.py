@@ -1,25 +1,26 @@
 import aiohttp
-import brotli
-import logging
+from aiohttp import ClientResponse
+
+import gzip
+import json
+
 from player_exists import getPlayers
 
 async def getPlayerId(nickname):
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(auto_decompress=False) as session:
         async with session.get(f'https://api.faceit.com/core/v1/nicknames/{nickname}') as response:
+            response: ClientResponse
             if response.status != 200:
                 raise ValueError('Response code is not 200')
 
-            #if faceit cache is not present, the response is not g-zipped but aiohttp stil thinks so
-            x_faceit_cache = response.headers['x-faceit-cache']
-            if not x_faceit_cache:
-                logging.warning('cache was not present, retrying')
-                raise CacheError('Faceit cache is missing')
-
-            try:
+            if response.headers.get('x-faceit-cache') != 'true':
+                # If the data is NOT cached, it's NOT compressed, just return json decode
                 response_json = await response.json()
-            except:
-                raise ValueError('Failed to decode json')
-    return response_json['payload']['guid']
+                return response_json['payload']['guid']
+
+            decoded = gzip.decompress(await response.read())
+            response_json = json.loads(decoded)
+            return response_json['payload']['guid']
 
 async def getWins(player1, player2, xGames):
     inSameLobby = 0
@@ -30,11 +31,6 @@ async def getWins(player1, player2, xGames):
     #Could probably be handeled different
     try:
         user_id = await getPlayerId(player1)
-    except CacheError:
-        try:
-            user_id = await getPlayerId(player1)
-        except:
-            raise
     except:
         raise
 
