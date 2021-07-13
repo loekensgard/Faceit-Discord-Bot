@@ -2,7 +2,10 @@ import logging
 from discord.embeds import Embed
 from discord.ext import commands
 from config import settings
-from faceit_service import getWins
+from faceit_service import get_stats
+
+from error_extensions import NeverInSameLobbyError
+from player_stats_class import player_stats
 
 logging.basicConfig(encoding='utf-8', level=logging.INFO)
 
@@ -19,53 +22,18 @@ async def on_ready():
     for guild in active_guilds:
         logging.info(f'Talking in {guild.name}\n')
 
-@bot.command(name='faceitkills', aliases = ['fkills'] , help='.!fkills <NICK1> <NICK2> <X-GAMES>')
+@bot.command(name='faceitstats', aliases = ['fstats'] , help='.!fstats <NICK1> <NICK2> <X-GAMES>')
 async def faceit_check_kills(ctx, arg1, arg2, arg3 = 10):
     if arg3 > 100:
         arg3 == 100
 
     try:
         logging.info(f'{ctx.author.name} called !faceit command')
-        status = await getWins(arg1, arg2, arg3, 'Kills')
+        in_same_lobby, player1, player2 = await get_stats(arg1, arg2, arg3)
 
-        if status == None:
-            await ctx.send(f'{arg1} and {arg2} haven\'t played together in {arg1}s {arg3} latest games')
-        else:
-            await ctx.send(embed=create_embed(status,arg1,arg2,arg3, 'Kills'))
-    except ValueError as err:
-        logging.error('Failed with error: {}'.format(err.args))
-        await ctx.send(f'Failed with error: {err.args}')
-
-@bot.command(name='faceitdeath', aliases = ['fdeath'], help='.!fdeath <NICK1> <NICK2> <X-GAMES>')
-async def faceit_check_death(ctx, arg1, arg2, arg3 = 10):
-    if arg3 > 200:
-        arg3 == 200
-
-    try:
-        logging.info(f'{ctx.author.name} called !faceit command')
-        status = await getWins(arg1, arg2, arg3, 'Deaths')
-
-        if status == None:
-            await ctx.send(f'{arg1} and {arg2} haven\'t played together in {arg1}s {arg3} latest games')
-        else:
-            await ctx.send(embed=create_embed(status,arg1,arg2,arg3, 'Deaths'))
-    except ValueError as err:
-        logging.error('Failed with error: {}'.format(err.args))
-        await ctx.send(f'Failed with error: {err.args}')
-
-@bot.command(name='faceiths', aliases = ['fhs'], help='.!fhs <NICK1> <NICK2> <X-GAMES>')
-async def faceit_check_hs(ctx, arg1, arg2, arg3 = 10):
-    if arg3 > 200:
-        arg3 == 200
-
-    try:
-        logging.info(f'{ctx.author.name} called !faceit command')
-        status = await getWins(arg1, arg2, arg3, 'Headshots %')
-
-        if status == None:
-            await ctx.send(f'{arg1} and {arg2} haven\'t played together in {arg1}s {arg3} latest games')
-        else:
-            await ctx.send(embed=create_embed(status,arg1,arg2,arg3, 'Headshots %'))
+        await ctx.send(embed=create_embed(in_same_lobby,player1,player2,arg3))
+    except NeverInSameLobbyError as err:
+        await ctx.send(f'{arg1} and {arg2} haven\'t played together in {arg1}s {arg3} latest games')
     except ValueError as err:
         logging.error('Failed with error: {}'.format(err.args))
         await ctx.send(f'Failed with error: {err.args}')
@@ -75,28 +43,23 @@ async def faceit_checker_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You are missing some arguments')
 
-@faceit_check_death.error
-async def faceit_hecker_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('You are missing some arguments')
 
-@faceit_check_hs.error
-async def faceit_checker_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('You are missing some arguments')
+def create_embed(in_same_lobby, player1, player2, inputGames):
 
-def create_embed(status, player1, player2, inputGames, property):
-    inSameLobby = status.get('inSameLobby', 0)
-    playerOneCount = status.get('playerOneCount', 0)
-    playerTwoCount = status.get('playerTwoCount', 0)
-    sameAmount = status.get('sameAmount', 0)
+    embed=Embed(
+        title=f'{player1.name} vs {player2.name}', 
+        description=f'You played together {in_same_lobby} time(s) in the last {inputGames} game(s)\n\n\
+        {player1.name} had most:\n**Kills**: {player1.kills} time(s)\n**Deaths**: {player1.deaths} time(s)\n**Hs**: {player1.hs} time(s)\n\n\
+        {player2.name} had most:\n**Kills**: {player2.kills} time(s)\n**Deaths**: {player2.deaths} time(s)\n**Hs**: {player2.hs} time(s)\n\n', color=0xFF5500)
+    if player1.avatar is not None:    
+        embed.set_thumbnail(url=player1.avatar)
 
-    embed=Embed(title=f'{player1} vs {player2}', description=f'You played together {inSameLobby} time(s) in the last {inputGames} game(s)', color=0xFF5500)
-    embed.add_field(name=f'{player1}', value=f'{playerOneCount} wins', inline=True)
-    embed.add_field(name=f'{player2}', value=f'{playerTwoCount} wins', inline=True)
-
-    if(sameAmount != 0):
-        embed.set_footer(text = f'Same amount of {property} in {sameAmount} game(s)')     
-    return embed   
+    if player1.same_amount_kills != 0:
+        embed.description += f'*Same amount kills*: {player1.same_amount_kills} time(s)\n'
+    if player1.same_amount_deaths != 0:
+        embed.description += f'*Same amount deaths*: {player1.same_amount_deaths} time(s)\n'    
+    if player1.same_amount_hs != 0:
+        embed.description += f'*Same amount hs*: {player1.same_amount_hs} time(s)\n'
+    return embed
             
 bot.run(TOKEN)
