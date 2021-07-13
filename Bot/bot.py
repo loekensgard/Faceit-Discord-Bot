@@ -21,8 +21,8 @@ async def on_ready():
 
 @bot.command(name='faceitkills', aliases = ['fkills'] , help='.!fkills <NICK1> <NICK2> <X-GAMES>')
 async def faceit_check_kills(ctx, arg1, arg2, arg3 = 10):
-    if arg3 > 200:
-        arg3 == 200
+    if arg3 > 100:
+        arg3 == 100
 
     try:
         logging.info(f'{ctx.author.name} called !faceit command')

@@ -31,13 +31,18 @@ async def getWins(player1, player2, xGames, property):
 
     headers = { 'Authorization': f'Bearer {settings.API_KEY}' }
     async with aiohttp.ClientSession(headers=headers) as session:
-        async with session.get(f'https://open.faceit.com/data/v4/players/{user_id}/history?game=csgo&offset=0&limit={xGames}') as matches_response:
+        async with session.get(f'https://open.faceit.com/data/v4/players/{user_id}/history?game=csgo&offset=0&limit={xGames}&from=1468420255') as matches_response:
             if matches_response.status != 200:
                 raise ValueError('Could not get matches from the faceit api')
             else:
                 json_response_matches = await matches_response.json()
+                print(json_response_matches.get('end'))
+                matches = json_response_matches.get('items')
 
-                for match in json_response_matches.get('items'):
+                print(len(matches))
+                print(xGames)
+
+                for match in matches:
                     match_id = match.get('match_id')
 
                     async with session.get(f'https://open.faceit.com/data/v4/matches/{match_id}/stats') as stats_response:
