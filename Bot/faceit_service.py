@@ -1,4 +1,5 @@
 import aiohttp
+import logging
 from player_service import get_players, get_player_stats
 from config import settings
 
@@ -42,8 +43,12 @@ async def get_stats(player1, player2, xGames):
                     match_id = match.get('match_id')
 
                     async with session.get(f'https://open.faceit.com/data/v4/matches/{match_id}/stats') as stats_response:
-                        if stats_response.status != 200:
-                            raise ValueError(f'Could not get stats for matchid: {match_id}')
+                        if stats_response.status == 404:
+                            #Just skip the match
+                            logging.error(f'Could not find stats for match: {match_id}')
+                        elif stats_response.status != 200:
+                            #Just skip the match
+                            logging.error(f'Failed to get stats for match: {match_id}')
                         else:
                             json_response_stats = await stats_response.json()
                             teams = json_response_stats.get('rounds')[0].get('teams')
